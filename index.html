@@ -1,0 +1,167 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Minecraft Bedrock JSON UI Reference</title>
+  <style>
+    body {
+      background-color: #121212;
+      color: #e0e0e0;
+      font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
+      margin: 0;
+      padding: 2rem;
+      line-height: 1.6;
+    }
+    h1, h2, h3 {
+      color: #90caf9;
+    }
+    pre, code {
+      background-color: #1e1e1e;
+      padding: 0.5em;
+      border-radius: 6px;
+      display: block;
+      white-space: pre-wrap;
+      overflow-x: auto;
+    }
+    hr {
+      border: none;
+      border-top: 1px solid #333;
+      margin: 2rem 0;
+    }
+    .section {
+      margin-bottom: 2rem;
+    }
+  </style>
+</head>
+<body>
+  <h1>Minecraft Bedrock Custom JSON UI Syntax Reference</h1>
+  <p>This document describes the structure, properties, and usage examples of the custom JSON UI system used for defining UI elements in Minecraft Bedrock Edition.</p>
+
+  <hr />
+  <div class="section">
+    <h2>TOP-LEVEL STRUCTURE</h2>
+    <p>Each UI file contains an object with key-value pairs:</p>
+    <pre>{
+  "element_id": { UIElementDefinition },
+  ...
+}</pre>
+  </div>
+
+  <div class="section">
+    <h2>COMMON PROPERTIES</h2>
+    <p>All UI elements may use the following:</p>
+    <ul>
+      <li>type: <code>string</code> // 'panel', 'button', 'stack_panel'</li>
+      <li>size: <code>[number, number]</code> // width, height in pixels</li>
+      <li>offset: <code>[number, number]</code> // x, y offset from screen center</li>
+      <li>color: <code>string</code> // hex color (e.g. '#ff00ff')</li>
+      <li>alpha: <code>number</code> // 0 to 1, transparency</li>
+      <li>visible: <code>boolean</code> // true or false</li>
+    </ul>
+  </div>
+
+  <div class="section">
+    <h2>TYPES OF ELEMENTS</h2>
+    <h3>1. PANEL</h3>
+    <p>A simple colored box.</p>
+    <pre>"my_panel": {
+  "type": "panel",
+  "size": [300, 100],
+  "offset": [0, 0],
+  "color": "#00ffcc",
+  "alpha": 0.8
+}</pre>
+
+    <h3>2. BUTTON</h3>
+    <p>An interactive clickable button.</p>
+    <p>Additional properties:</p>
+    <ul>
+      <li>text: <code>string</code></li>
+      <li>controls: <code>array</code> of control states</li>
+      <li>bindings: <code>array</code> of bindings</li>
+    </ul>
+    <pre>"my_button": {
+  "type": "button",
+  "size": [120, 40],
+  "offset": [100, 0],
+  "text": "Click Me",
+  "bindings": [
+    { "binding_name": "my_panel", "binding_name_override": "#visible" }
+  ],
+  "controls": [
+    { "default": { "color": "#888" } },
+    { "default_hover": { "color": "#aaa" } },
+    { "pressed": { "color": "#555" } },
+    { "checked": { "color": "#4caf50" } }
+  ]
+}</pre>
+
+    <h3>3. STACK_PANEL</h3>
+    <p>A layout container that arranges child controls in a row or column.</p>
+    <p>Additional properties:</p>
+    <ul>
+      <li>orientation: <code>'horizontal'</code> or <code>'vertical'</code></li>
+      <li>contain: <code>boolean</code></li>
+      <li>controls: <code>array</code> of inline or referenced elements</li>
+    </ul>
+    <pre>"my_stack": {
+  "type": "stack_panel",
+  "offset": [0, 0],
+  "size": [300, 300],
+  "orientation": "horizontal",
+  "contain": true,
+  "alpha": 1,
+  "controls": [
+    { "button1": { "type": "button", "size": [20, 20], "text": "One" } },
+    { "button2": { "type": "button", "size": [40, 20], "text": "Two" } }
+  ]
+}</pre>
+  </div>
+
+  <div class="section">
+    <h2>BINDINGS</h2>
+    <p>Used for dynamic visibility toggles.</p>
+    <pre>"bindings": [
+  {
+    "binding_name": "target_id",
+    "binding_name_override": "#visible"
+  }
+]</pre>
+  </div>
+
+  <div class="section">
+    <h2>CONTROL STATES (FOR BUTTONS)</h2>
+    <p>Each control is an object with a single key:</p>
+    <ul>
+      <li>default, default_hover, pressed, pressed_hover, checked, checked_hover</li>
+    </ul>
+    <pre>"controls": [
+  { "default": { "color": "#999" } },
+  { "pressed": { "color": "#f00", "size": [50, 50], "offset": [0, 0] } }
+]</pre>
+    <p>These can also include additional nested UI definitions (e.g., popups).</p>
+  </div>
+
+  <div class="section">
+    <h2>NAMESPACING (EXTERNAL REFERENCES)</h2>
+    <p>A stack_panel control may refer to an external file’s path:</p>
+    <pre>"controls": [
+  { "@external_namespace.element_name": null }
+]</pre>
+    <p>You must supply <code>externalDefs</code> when calling <code>render(ui, externalDefs)</code>.</p>
+  </div>
+
+  <div class="section">
+    <h2>DEFAULT CENTERED ORIGIN</h2>
+    <p>All offsets are interpreted from the CENTER of the screen.</p>
+    <p>Example:</p>
+    <pre>offset: [50, 0] → 50px to the right of center.</pre>
+  </div>
+
+  <hr />
+  <div class="section">
+    <h2>END OF DOCUMENTATION</h2>
+  </div>
+</body>
+</html>
