@@ -6,7 +6,7 @@
   <style>
     html, body { margin: 0; height: 100%; overflow: hidden; }
     #ui-container {
-      position: relative; /* Add this line */
+      position: relative;
       width: 100%;
       height: 100%;
       pointer-events: none;
@@ -15,7 +15,7 @@
       position: absolute;
       box-sizing: border-box;
       pointer-events: auto;
-      border-radius: 0px; /* Default to square */
+      border-radius: 0px;
     }
     .panel {
       background-color: rgba(255, 255, 255, 0.95);
@@ -31,6 +31,38 @@
       transition: background-color 0.2s ease;
       border-radius: 0px;
     }
+    .image {
+      background-size: contain;
+      background-repeat: no-repeat;
+      background-position: center;
+    }
+    input[type="range"] {
+      width: 100%;
+    }
+    input[type="text"] {
+      width: 100%;
+      box-sizing: border-box;
+    }
+    input[type="checkbox"] {
+      width: 20px;
+      height: 20px;
+    }
+    .dropdown {
+      overflow: hidden;
+      transition: all 0.3s ease;
+    }
+    .dropdown-header {
+      cursor: pointer;
+      padding: 5px;
+      background-color: #555;
+    }
+    .dropdown-content {
+      display: none;
+      background-color: #333;
+    }
+    .scroll-view {
+      overflow-y: auto;
+    }
   </style>
 </head>
 <body>
@@ -41,7 +73,7 @@ class UIRenderer {
     this.uiContainer = document.getElementById('ui-container');
     this.elements = {};
     this.state = {};
-    this.externalDefs = {}; // for namespace references
+    this.externalDefs = {};
     window.addEventListener('resize', () => this.render(this.currentUI));
   }
 
@@ -51,9 +83,34 @@ class UIRenderer {
     this.externalDefs = externalDefs;
     this.elements = {};
 
+    // Calculate positions to prevent overlap
+    const positions = {
+      top_left: { x: 20, y: 20 },
+      top_middle: { x: window.innerWidth/2, y: 20 },
+      top_right: { x: window.innerWidth - 220, y: 20 },
+      left_middle: { x: 20, y: window.innerHeight/2 },
+      center: { x: window.innerWidth/2, y: window.innerHeight/2 },
+      right_middle: { x: window.innerWidth - 220, y: window.innerHeight/2 },
+      bottom_left: { x: 20, y: window.innerHeight - 120 },
+      bottom_middle: { x: window.innerWidth/2, y: window.innerHeight - 120 },
+      bottom_right: { x: window.innerWidth - 220, y: window.innerHeight - 120 }
+    };
+
     for (const [id, def] of Object.entries(uiDefinition)) {
       const el = this.createElement(id, def);
-      if (el) this.uiContainer.appendChild(el);
+      if (el) {
+        // Position based on anchor point
+        if (def.anchor_to && positions[def.anchor_to]) {
+          const pos = positions[def.anchor_to];
+          el.style.left = pos.x + 'px';
+          el.style.top = pos.y + 'px';
+          
+          // Update position for next element at this anchor point
+          positions[def.anchor_to].y += (def.size ? def.size[1] : 50) + 20;
+        }
+        
+        this.uiContainer.appendChild(el);
+      }
     }
   }
 
@@ -66,18 +123,6 @@ class UIRenderer {
       el.style.height = def.size[1] + 'px';
     }
 
-    // Calculate the center of the screen
-    const centerX = window.innerWidth / 2;
-    const centerY = window.innerHeight / 2;
-
-    // Adjust the offset so that (0,0) is the center of the screen
-    if (def.offset) {
-      const offsetX = def.offset[0] + centerX;
-      const offsetY = def.offset[1] + centerY;
-      el.style.left = offsetX + 'px';
-      el.style.top = offsetY + 'px';
-    }
-
     if (def.visible === false) el.style.display = 'none';
 
     this.elements[id] = el;
@@ -86,6 +131,12 @@ class UIRenderer {
       case 'panel': this.setupPanel(el, def); break;
       case 'button': this.setupButton(el, def, id); break;
       case 'stack_panel': this.setupStackPanel(el, def); break;
+      case 'image': this.setupImage(el, def); break;
+      case 'slider': this.setupSlider(el, def, id); break;
+      case 'edit_box': this.setupEditBox(el, def, id); break;
+      case 'scroll_view': this.setupScrollView(el, def, id); break;
+      case 'toggle': this.setupToggle(el, def, id); break;
+      case 'dropdown': this.setupDropdown(el, def, id); break;
     }
 
     return el;
@@ -93,6 +144,7 @@ class UIRenderer {
 
   setupPanel(el, def) {
     if (def.color) el.style.backgroundColor = this.parseColor(def.color, def.alpha || 1);
+    el.classList.add('panel');
   }
 
   setupButton(el, def, id) {
@@ -137,6 +189,202 @@ class UIRenderer {
 
       this.updateButtonColor(el, { toggled, hovered, pressed }, controls);
     });
+  }
+
+  setupImage(el, def) {
+    el.classList.add('image');
+    el.style.backgroundImage = `url(${def.texture || ''})`;
+    
+    if (def.should_keep_aspect_ratio) {
+      const img = new Image();
+      img.src = def.texture;
+      img.onload = () => {
+        const aspectRatio = img.width / img.height;
+        const targetWidth = def.size ? def.size[0] : 200;
+        const targetHeight = targetWidth / aspectRatio;
+        el.style.backgroundSize = `${targetWidth}px ${targetHeight}px`;
+      };
+    } else {
+      el.style.backgroundSize = def.size ? `${def.size[0]}px ${def.size[1]}px` : '100% 100%';
+    }
+
+    if (def.is_sprite_sheet) {
+      const spriteWidth = def.sprite_width || 200;
+      const spriteHeight = def.sprite_height || 100;
+      const row = def.row || 0;
+      const column = def.column || 0;
+      el.style.backgroundPosition = `-${column * spriteWidth}px -${row * spriteHeight}px`;
+    }
+  }
+
+  setupSlider(el, def, id) {
+    const slider = document.createElement('input');
+    slider.type = 'range';
+    slider.min = def.min || 0;
+    slider.max = def.max || 100;
+    slider.value = def.value || 50;
+    slider.step = def.step || 1;
+    slider.style.width = def.size ? def.size[0] + 'px' : '100%';
+    slider.style.height = def.size ? def.size[1] + 'px' : '20px';
+
+    slider.addEventListener('input', () => {
+      this.state[id] = slider.value;
+      if (def.bindings) {
+        def.bindings.forEach(binding => {
+          const target = this.elements[binding.binding_name];
+          if (target && binding.binding_name_override) {
+            target.style[binding.binding_name_override] = slider.value;
+          }
+        });
+      }
+    });
+
+    el.appendChild(slider);
+  }
+
+  setupEditBox(el, def, id) {
+    const input = document.createElement('input');
+    input.type = 'text';
+    input.value = def.value || '';
+    input.placeholder = def.placeholder || '';
+    input.style.width = def.size ? def.size[0] + 'px' : '100%';
+    input.style.height = def.size ? def.size[1] + 'px' : '30px';
+
+    input.addEventListener('input', () => {
+      this.state[id] = input.value;
+      if (def.bindings) {
+        def.bindings.forEach(binding => {
+          const target = this.elements[binding.binding_name];
+          if (target && binding.binding_name_override) {
+            target.innerText = input.value;
+          }
+        });
+      }
+    });
+
+    el.appendChild(input);
+  }
+
+  setupScrollView(el, def, id) {
+    el.classList.add('scroll-view');
+    el.style.overflowY = 'auto';
+    el.style.height = def.size ? def.size[1] + 'px' : '200px';
+    el.style.width = def.size ? def.size[0] + 'px' : '100%';
+
+    if (def.controls) {
+      def.controls.forEach(control => {
+        const controlEl = this.createElement(control.id, control);
+        el.appendChild(controlEl);
+      });
+    }
+  }
+
+  setupToggle(el, def, id) {
+    const toggle = document.createElement('input');
+    toggle.type = 'checkbox';
+    toggle.checked = def.checked || false;
+
+    toggle.addEventListener('change', () => {
+      this.state[id] = toggle.checked;
+      if (def.bindings) {
+        def.bindings.forEach(binding => {
+          const target = this.elements[binding.binding_name];
+          if (target && binding.binding_name_override === '#checked') {
+            target.checked = toggle.checked;
+          }
+        });
+      }
+    });
+
+    el.appendChild(toggle);
+  }
+
+  setupDropdown(el, def, id) {
+    const dropdown = document.createElement('div');
+    dropdown.className = 'dropdown';
+    dropdown.style.width = def.size_when_closed[0] + 'px';
+    dropdown.style.height = def.size_when_closed[1] + 'px';
+    dropdown.style.backgroundColor = 'black';
+    dropdown.style.color = 'white';
+
+    const dropdownHeader = document.createElement('div');
+    dropdownHeader.className = 'dropdown-header';
+    dropdownHeader.style.height = def.size_when_closed[1] + 'px';
+    dropdownHeader.textContent = 'Toggle Dropdown';
+    dropdown.appendChild(dropdownHeader);
+
+    const dropdownContent = document.createElement('div');
+    dropdownContent.className = 'dropdown-content';
+    dropdownContent.style.top = def.size_when_closed[1] + 'px';
+    dropdown.appendChild(dropdownContent);
+
+    def.dropdown_content.forEach(content => {
+      if (content.stacks && content.stacks.controls) {
+        content.stacks.controls.forEach(item => {
+          const option = document.createElement('div');
+          option.style.padding = '10px';
+          option.style.cursor = 'pointer';
+          option.style.display = 'flex';
+          option.style.alignItems = 'center';
+
+          if (item.image) {
+            const image = document.createElement('div');
+            image.style.width = item.image.size[0] + 'px';
+            image.style.height = item.image.size[1] + 'px';
+            
+            if (item.image.texture === "white") {
+              image.style.backgroundColor = "white";
+            } else if (item.image.texture === "black") {
+              image.style.backgroundColor = "black";
+            } else if (item.image.texture) {
+              const imgElement = document.createElement('img');
+              imgElement.src = item.image.texture;
+              imgElement.style.width = '100%';
+              imgElement.style.height = '100%';
+              image.appendChild(imgElement);
+            }
+
+            image.style.marginRight = '10px';
+            option.appendChild(image);
+          }
+
+          option.addEventListener('click', (event) => {
+            event.stopPropagation();
+            dropdownHeader.textContent = 'Selected';
+            this.state[id] = item.image.texture;
+            dropdownContent.style.display = 'none';
+            dropdown.style.width = def.size_when_closed[0] + 'px';
+            dropdown.style.height = def.size_when_closed[1] + 'px';
+          });
+
+          dropdownContent.appendChild(option);
+        });
+      }
+    });
+
+    dropdownHeader.addEventListener('click', (event) => {
+      event.stopPropagation();
+      const currentDisplay = dropdownContent.style.display;
+      if (currentDisplay === 'none') {
+        dropdownContent.style.display = 'block';
+        dropdown.style.width = def.size_when_open[0] + 'px';
+        dropdown.style.height = def.size_when_open[1] + 'px';
+      } else {
+        dropdownContent.style.display = 'none';
+        dropdown.style.width = def.size_when_closed[0] + 'px';
+        dropdown.style.height = def.size_when_closed[1] + 'px';
+      }
+    });
+
+    document.addEventListener('click', (event) => {
+      if (!dropdown.contains(event.target)) {
+        dropdownContent.style.display = 'none';
+        dropdown.style.width = def.size_when_closed[0] + 'px';
+        dropdown.style.height = def.size_when_closed[1] + 'px';
+      }
+    });
+
+    el.appendChild(dropdown);
   }
 
   updateButtonColor(el, state, colors) {
@@ -186,148 +434,129 @@ class UIRenderer {
 
   setupStackPanel(el, def) {
     const isVertical = def.orientation === 'vertical';
-    const spacing = def.contain ? 0 : (
-      (isVertical ? def.size[1] : def.size[0]) / def.controls.length
-    );
-
     el.style.display = 'flex';
     el.style.flexDirection = isVertical ? 'column' : 'row';
-    el.style.overflow = 'hidden';
     el.style.backgroundColor = this.parseColor(def.color || '#000', def.alpha || 1);
 
     def.controls.forEach((control, i) => {
       const [id, content] = Object.entries(control)[0];
-      let childDef;
-
-      if (id.includes('@')) {
-        const [name, path] = id.split('@')[1].split('.');
-        childDef = this.externalDefs[name]?.[path];
-      } else {
-        childDef = content;
-      }
-
-      if (!childDef) return;
-
-      const childEl = this.createElement(id, childDef);
-      if (def.contain) {
-        childEl.style.flex = '0 0 auto';
-      } else {
-        childEl.style.flex = '1';
-      }
-
-      childEl.style.position = 'relative';
-      el.appendChild(childEl);
+      const controlEl = this.createElement(id, content);
+      el.appendChild(controlEl);
     });
   }
 }
 
-const exampleDefs = {
-  my_panel1: {
-    type: 'panel',
-    size: [300, 100],
-    offset: [100, 0],
-    color: '#1abc9c',
-    visible: false,
+// Example UI with all element types
+const uiDefinition = {
+  // Panels
+  "panel_top_left": {
+    "type": "panel",
+    "anchor_to": "top_left",
+    "size": [200, 100],
+    "color": "#1abc9c",
+    "alpha": 0.8
   },
-  my_panel2: {
-    type: 'panel',
-    size: [300, 100],
-    offset: [200, 0],
-    color: '#f3a35c',
-    visible: false,
+  "panel_top_middle": {
+    "type": "panel",
+    "anchor_to": "top_middle",
+    "size": [200, 100],
+    "color": "#3498db"
   },
-  my_panel3: {
-    type: 'panel',
-    size: [300, 100],
-    offset: [300, 0],
-    color: '#a73613',
-    visible: false,
+  
+  // Buttons
+  "button_left_middle": {
+    "type": "button",
+    "anchor_to": "left_middle",
+    "size": [120, 40],
+    "text": "Click Me",
+    "controls": [
+      { "default": { "color": "#888" } },
+      { "default_hover": { "color": "#aaa" } }
+    ]
   },
-  my_stack: {
-    type: 'stack_panel',
-    offset: [0, 0],
-    size: [300, 300],
-    orientation: 'horizontal',
-    contain: true,
-    alpha: 1,
-    controls: [
+  
+  // Image
+  "image_center": {
+    "type": "image",
+    "anchor_to": "center",
+    "size": [150, 150],
+    "texture": "https://via.placeholder.com/150",
+    "should_keep_aspect_ratio": true
+  },
+  
+  // Slider
+  "slider_right_middle": {
+    "type": "slider",
+    "anchor_to": "right_middle",
+    "size": [200, 20],
+    "min": 0,
+    "max": 100,
+    "value": 50
+  },
+  
+  // Edit Box
+  "editbox_bottom_left": {
+    "type": "edit_box",
+    "anchor_to": "bottom_left",
+    "size": [200, 30],
+    "placeholder": "Enter text..."
+  },
+  
+  // Scroll View
+  "scroll_view_bottom_middle": {
+    "type": "scroll_view",
+    "anchor_to": "bottom_middle",
+    "size": [200, 150],
+    "controls": [
+      { "scroll_item1": { "type": "panel", "size": [180, 40], "color": "#333" } },
+      { "scroll_item2": { "type": "panel", "size": [180, 40], "color": "#444" } },
+      { "scroll_item3": { "type": "panel", "size": [180, 40], "color": "#555" } }
+    ]
+  },
+  
+  // Toggle
+  "toggle_bottom_right": {
+    "type": "toggle",
+    "anchor_to": "bottom_right",
+    "size": [30, 30],
+    "checked": true
+  },
+  
+  // Dropdown
+  "dropdown_top_right": {
+    "type": "dropdown",
+    "anchor_to": "top_right",
+    "size_when_closed": [120, 30],
+    "size_when_open": [120, 150],
+    "toggleable_header_size": [120, 30],
+    "dropdown_content": [
       {
-        button1: {
-          size: [20, 20],
-          type: 'button',
-          text: 'First',
-          bindings: [
-            {
-              binding_name: 'my_panel1',
-              binding_name_override: '#visible'
-            }
-          ],
-          controls: [
-            {
-              pressed: {
-                type: 'panel',
-                color: '#1abc9c',
-                size: [100, 100],
-                offset: [400, 300]
-              }
-            }
-          ]
-        }
-      },
-      {
-        button2: {
-          size: [40, 20],
-          type: 'button',
-          text: 'Second',
-          bindings: [
-            {
-              binding_name: 'my_panel2',
-              binding_name_override: '#visible'
-            }
-          ],
-          controls: [
-            {
-              pressed: {
-                type: 'panel',
-                color: '#f3a35c',
-                size: [100, 100],
-                offset: [-400, 300]
-              }
-            }
-          ]
-        }
-      },
-      {
-        button3: {
-          size: [20, 20],
-          type: 'button',
-          text: 'Third',
-          bindings: [
-            {
-              binding_name: 'my_panel3',
-              binding_name_override: '#visible'
-            }
-          ],
-          controls: [
-            {
-              pressed: {
-                type: 'panel',
-                color: '#a73613',
-                size: [100, 100],
-                offset: [0, 300]
-              }
-            }
+        "stacks": {
+          "controls": [
+            { "option1": { "type": "image", "texture": "white", "size": [100, 30] } },
+            { "option2": { "type": "image", "texture": "black", "size": [100, 30] } }
           ]
         }
       }
     ]
+  },
+  
+  // Stack Panel
+  "stack_panel_center": {
+    "type": "stack_panel",
+    "anchor_to": "center",
+    "size": [300, 50],
+    "orientation": "horizontal",
+    "controls": [
+      { "stack_button1": { "type": "button", "size": [80, 40], "text": "One" } },
+      { "stack_button2": { "type": "button", "size": [80, 40], "text": "Two" } }
+    ]
   }
 };
 
-
+// Initialize and render the UI
 const renderer = new UIRenderer();
-renderer.render(exampleDefs);
-
+renderer.render(uiDefinition);
   </script>
 </body>
 </html>
