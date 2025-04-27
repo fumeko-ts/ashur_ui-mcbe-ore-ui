@@ -36,35 +36,36 @@
 </head>
 <body>
   <h1>Minecraft Bedrock Custom JSON UI Syntax Reference</h1>
-  <p>This document describes the structure, properties, and usage examples of the custom JSON UI system made by [me](https://www.planetminecraft.com/member/ashura_tepes/) inspired mostly on mcbe json ui.</p>
+  <p>This document describes the structure, properties, and usage examples of the custom JSON UI system made by [me](https://www.planetminecraft.com/member/ashura_tepes/) inspired mostly by mcbe json ui.</p>
 
   <hr />
   <div class="section">
     <h2>TOP-LEVEL STRUCTURE</h2>
-    <p>Each UI file contains an object with key-value pairs:</p>
+    <p>Each UI file contains an object with key-value pairs representing UI elements:</p>
     <pre>{
   "element_id": { UIElementDefinition },
   ...
 }</pre>
+    <p>Where each element is identified by a unique <code>element_id</code> and defined by its respective <code>UIElementDefinition</code>.</p>
   </div>
 
   <div class="section">
     <h2>COMMON PROPERTIES</h2>
-    <p>All UI elements may use the following:</p>
+    <p>All UI elements may use the following properties:</p>
     <ul>
-      <li>type: <code>string</code> // 'panel', 'button', 'stack_panel'</li>
-      <li>size: <code>[number, number]</code> // width, height in pixels</li>
-      <li>offset: <code>[number, number]</code> // x, y offset from screen center</li>
-      <li>color: <code>string</code> // hex color (e.g. '#ff00ff')</li>
-      <li>alpha: <code>number</code> // 0 to 1, transparency</li>
-      <li>visible: <code>boolean</code> // true or false</li>
+      <li><code>type</code>: <code>string</code> // 'panel', 'button', 'stack_panel', etc. Defines the type of UI element.</li>
+      <li><code>size</code>: <code>[number, number]</code> // [width, height] in pixels. Defines the dimensions of the element.</li>
+      <li><code>offset</code>: <code>[number, number]</code> // [x, y] offset from the center of the screen. Defines the position relative to the screen center.</li>
+      <li><code>color</code>: <code>string</code> // Hex color (e.g. '#ff00ff'). Defines the color of the element.</li>
+      <li><code>alpha</code>: <code>number</code> // 0 to 1, transparency. Defines the opacity of the element, where 0 is fully transparent and 1 is fully opaque.</li>
+      <li><code>visible</code>: <code>boolean</code> // true or false. Controls the visibility of the element.</li>
     </ul>
   </div>
 
   <div class="section">
     <h2>TYPES OF ELEMENTS</h2>
     <h3>1. PANEL</h3>
-    <p>A simple colored box.</p>
+    <p>A simple colored box that can be used for backgrounds or containers.</p>
     <pre>"my_panel": {
   "type": "panel",
   "size": [300, 100],
@@ -74,12 +75,12 @@
 }</pre>
 
     <h3>2. BUTTON</h3>
-    <p>An interactive clickable button.</p>
+    <p>An interactive clickable button. Buttons can trigger actions like opening menus, toggling visibility, etc.</p>
     <p>Additional properties:</p>
     <ul>
-      <li>text: <code>string</code></li>
-      <li>controls: <code>array</code> of control states</li>
-      <li>bindings: <code>array</code> of bindings</li>
+      <li><code>text</code>: <code>string</code> // The text displayed on the button.</li>
+      <li><code>controls</code>: <code>array</code> of control states. Defines how the button will appear in different states (e.g., normal, hovered, pressed).</li>
+      <li><code>bindings</code>: <code>array</code> of bindings. Specifies what elements or properties are affected when the button is interacted with.</li>
     </ul>
     <pre>"my_button": {
   "type": "button",
@@ -98,12 +99,12 @@
 }</pre>
 
     <h3>3. STACK_PANEL</h3>
-    <p>A layout container that arranges child controls in a row or column.</p>
+    <p>A layout container that arranges child controls in a row or column. Useful for organizing elements.</p>
     <p>Additional properties:</p>
     <ul>
-      <li>orientation: <code>'horizontal'</code> or <code>'vertical'</code></li>
-      <li>contain: <code>boolean</code></li>
-      <li>controls: <code>array</code> of inline or referenced elements</li>
+      <li><code>orientation</code>: <code>'horizontal'</code> or <code>'vertical'</code>. Defines the direction in which the child elements are laid out.</li>
+      <li><code>contain</code>: <code>boolean</code> // true or false. Controls whether the stack panel will constrain its children to fit within its bounds.</li>
+      <li><code>controls</code>: <code>array</code> of inline or referenced elements. Defines the child elements inside the stack panel.</li>
     </ul>
     <pre>"my_stack": {
   "type": "stack_panel",
@@ -121,20 +122,27 @@
 
   <div class="section">
     <h2>BINDINGS</h2>
-    <p>Used for dynamic visibility toggles.</p>
+    <p>Used for dynamic visibility toggles and other UI behavior connections between elements.</p>
+    <p>Bindings can toggle properties like visibility, text, or color of elements based on user interactions or other conditions.</p>
     <pre>"bindings": [
   {
     "binding_name": "target_id",
     "binding_name_override": "#visible"
   }
 ]</pre>
+    <p>The binding connects the target element’s property (in this case, visibility) to another UI element’s state.</p>
   </div>
 
   <div class="section">
     <h2>CONTROL STATES (FOR BUTTONS)</h2>
-    <p>Each control is an object with a single key:</p>
+    <p>Each button can have different visual states based on its interaction with the user (hover, pressed, checked, etc.).</p>
     <ul>
-      <li>default, default_hover, pressed, pressed_hover, checked, checked_hover</li>
+      <li><code>default</code>: The button's appearance when it is not being interacted with.</li>
+      <li><code>default_hover</code>: The button's appearance when the mouse is hovering over it.</li>
+      <li><code>pressed</code>: The button's appearance when it is being clicked or pressed.</li>
+      <li><code>pressed_hover</code>: The button's appearance when it is pressed and the mouse is still hovering over it.</li>
+      <li><code>checked</code>: The button’s appearance when it is in a checked or toggled state.</li>
+      <li><code>checked_hover</code>: The button’s appearance when it is in a checked state and the mouse is hovering over it.</li>
     </ul>
     <pre>"controls": [
   { "default": { "color": "#999" } },
@@ -145,23 +153,23 @@
 
   <div class="section">
     <h2>NAMESPACING (EXTERNAL REFERENCES)</h2>
-    <p>A stack_panel control may refer to an external file’s path:</p>
+    <p>UI elements can reference external definitions to load additional UI elements or properties from other JSON files.</p>
     <pre>"controls": [
   { "@external_namespace.element_name": null }
 ]</pre>
-    <p>You must supply <code>externalDefs</code> when calling <code>render(ui, externalDefs)</code>.</p>
+    <p>When using external namespaces, you must provide an <code>externalDefs</code> parameter when rendering the UI to include the external files.</p>
   </div>
 
   <div class="section">
     <h2>DEFAULT CENTERED ORIGIN</h2>
-    <p>All offsets are interpreted from the CENTER of the screen.</p>
+    <p>All offsets are interpreted from the center of the screen.</p>
     <p>Example:</p>
     <pre>offset: [50, 0] → 50px to the right of center.</pre>
   </div>
 
   <hr />
   <div class="section">
-    <h2>Example of whats going on </h2>
+    <h2>Example of what's going on</h2>
     <div onclick="location.href='https://fumeko-ts.github.io/ashur_ui-mcbe-ore-ui/json_test.html'"
      style="
        cursor: pointer;
