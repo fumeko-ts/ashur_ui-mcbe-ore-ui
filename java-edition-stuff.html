@@ -1,0 +1,105 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Toggle Button Documentation</title>
+  <link href="https://cdn.jsdelivr.net/npm/prismjs@1.29.0/themes/prism-tomorrow.min.css" rel="stylesheet" />
+  <style>
+    body {
+      font-family: 'Segoe UI', sans-serif;
+      background-color: #121212;
+      color: #f1f1f1;
+      padding: 2rem;
+      line-height: 1.6;
+    }
+    .container {
+      max-width: 800px;
+      margin: auto;
+    }
+    h1, h2 {
+      color: #00ffcc;
+    }
+    h2 {
+      margin-top: 2rem;
+      border-bottom: 1px solid #00ffcc;
+      padding-bottom: 0.2rem;
+    }
+    pre {
+      background-color: #1e1e1e;
+      padding: 1rem;
+      border-radius: 8px;
+      overflow-x: auto;
+    }
+    code {
+      font-family: 'Fira Code', monospace;
+    }
+    .note {
+      background-color: #1a1a1a;
+      border-left: 4px solid #00ffcc;
+      padding: 1rem;
+      margin-top: 1rem;
+      border-radius: 6px;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h1>Java Toggle Button Implementation</h1>
+    <p>This page documents a simple toggle button implementation for a Minecraft mod screen. Below are sections for code, notes, and customizations.</p>
+
+    <!-- Main Code Example -->
+    <h2>Main Code Example</h2>
+    <pre><code class="language-java">
+// Calculate center position for the toggle button
+int centerX = (this.width - 35) / 2;
+int centerY = (this.height - 27) / 2;
+
+// Create and configure the toggle button
+toggleButton = new Toggle(centerX, centerY);
+toggleButton.configure(
+    "testing_toggle",
+    () -> {
+        System.out.println("Toggle is on, switching screen.");
+        Minecraft.getInstance().setScreen(new JoinMultiplayerScreen(this));
+    },
+    () -> {
+        System.out.println("Toggle is off, staying on current screen.");
+        Minecraft.getInstance().setScreen(this);
+    }
+);
+
+this.addRenderableWidget(toggleButton);
+    </code></pre>
+
+    <!-- Placeholder: Additional Code Example -->
+    <h2>Additional Code Example</h2>
+    <pre><code class="language-java">
+// TODO: Add another example or variation here
+    </code></pre>
+
+    <!-- Placeholder: Explanation -->
+    <h2>Explanation</h2>
+    <div class="note">
+      <p>// TODO: Add a detailed explanation of how the toggle logic works, UI interactions, or Minecraft-specific methods.</p>
+    </div>
+
+    <!-- Placeholder: Usage Tips -->
+    <h2>Usage Tips</h2>
+    <ul>
+      <li>// TODO: Describe when to use this toggle</li>
+      <li>// TODO: Common customization options</li>
+      <li>// TODO: Possible issues and debugging steps</li>
+    </ul>
+
+    <!-- Placeholder: Custom Styles or Components -->
+    <h2>Custom Styles or Extensions</h2>
+    <pre><code class="language-java">
+// TODO: Add custom toggle variations, animations, or component extensions
+    </code></pre>
+  </div>
+
+  <script src="https://cdn.jsdelivr.net/npm/prismjs@1.29.0/prism.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/prismjs@1.29.0/components/prism-java.min.js"></script>
+</body>
+</html>
